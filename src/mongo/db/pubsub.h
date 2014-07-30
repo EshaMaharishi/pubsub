@@ -34,6 +34,7 @@
 #include "mongo/bson/oid.h"
 #include "mongo/util/concurrency/mutex.h"
 #include "mongo/util/net/hostandport.h"
+#include "mongo/db/projection.h"
 
 namespace mongo {
 
@@ -45,19 +46,25 @@ namespace mongo {
         SubscriptionId subscriptionId;
         std::string channel;
         BSONObj message;
-
+        unsigned long long timestamp;
         SubscriptionMessage(SubscriptionId _subscriptionId,
                             std::string _channel,
-                            BSONObj _message) {
+                            BSONObj _message, 
+                            unsigned long long _timestamp) {
             subscriptionId = _subscriptionId;
             channel = _channel;
             message = _message;
+            timestamp = _timestamp;
         }
 
         friend bool operator<(const SubscriptionMessage& m1, const SubscriptionMessage& m2) {
             if (m1.subscriptionId < m2.subscriptionId)
                 return true;
             if (m1.subscriptionId == m2.subscriptionId && m1.channel < m2.channel)
+                return true;
+            if (m1.subscriptionId == m2.subscriptionId &&
+                m1.channel == m2.channel &&
+                m1.timestamp > m2.timestamp)
                 return true;
             return false;
         }
@@ -68,7 +75,8 @@ namespace mongo {
 
         // outwards-facing interface for pubsub communication across replsets and clusters
         static bool publish(const string& channel, const BSONObj& message);
-        static SubscriptionId subscribe(const string& channel);
+        static SubscriptionId subscribe(const string& channel, const BSONObj& filter,
+                                        const BSONObj& projection);
         static std::priority_queue<SubscriptionMessage>
             poll(std::set<SubscriptionId>& subscriptionIds, long timeout, long long& millisPolled,
                  bool& pollAgain, std::map<SubscriptionId, std::string>& errors);
@@ -112,6 +120,12 @@ namespace mongo {
             // Signifies that the subscription has been polled recently and is therefore
             // still alive. Used to clean up subscriptions that are abandoned.
             int polledRecently : 1;
+
+            // Only return documents for this subscription that match this filter
+            BSONObj* filter;
+
+            // Only return the fields in each document that match the projection
+            Projection* projection;
         };
 
         // max poll length so we can check if unsubscribe has been called

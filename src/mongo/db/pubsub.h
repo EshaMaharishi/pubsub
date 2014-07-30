@@ -68,7 +68,7 @@ namespace mongo {
 
         // outwards-facing interface for pubsub communication across replsets and clusters
         static bool publish(const string& channel, const BSONObj& message);
-        static SubscriptionId subscribe(const string& channel);
+        static SubscriptionId subscribe(const string& channel, const BSONObj& filter);
         static std::priority_queue<SubscriptionMessage>
             poll(std::set<SubscriptionId>& subscriptionIds, long timeout, long long& millisPolled,
                  bool& pollAgain, std::map<SubscriptionId, std::string>& errors);
@@ -112,6 +112,9 @@ namespace mongo {
             // Signifies that the subscription has been polled recently and is therefore
             // still alive. Used to clean up subscriptions that are abandoned.
             int polledRecently : 1;
+
+            // Only return documents for this subscription that match this filter
+            BSONObj* filter;
         };
 
         // max poll length so we can check if unsubscribe has been called

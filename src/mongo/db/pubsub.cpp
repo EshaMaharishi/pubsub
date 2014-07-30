@@ -37,7 +37,7 @@
 #include "mongo/db/instance.h"
 #include "mongo/db/server_options_helpers.h"
 #include "mongo/db/server_parameters.h"
-
+#include "mongo/db/matcher/matcher.h"
 
 namespace mongo {
 
@@ -173,7 +173,7 @@ namespace mongo {
 
     // TODO: add secure access to this channel?
     // perhaps return an <oid, key> pair?
-    SubscriptionId PubSub::subscribe(const std::string& channel) {
+    SubscriptionId PubSub::subscribe(const std::string& channel, const BSONObj& filter) {
         SubscriptionId subscriptionId;
         subscriptionId.init();
 
@@ -191,6 +191,7 @@ namespace mongo {
         s->inUse = 0;
         s->shouldUnsub = 0;
         s->polledRecently = 1;
+        s->filter = new BSONObj(filter.getOwned());
 
         SimpleMutex::scoped_lock lk(mapMutex);
         subscriptions.insert(std::make_pair(subscriptionId, s));
@@ -364,8 +365,13 @@ namespace mongo {
                     message = message.getOwned();
                     msg.rebuild();
 
-                    SubscriptionMessage m(subscriptionId, channel, message);
-                    outbox.push(m);
+                    if(!s->filter->isEmpty()){
+                        Matcher2 matcher(*(s->filter));
+                        if(matcher.matches(message)){
+                            SubscriptionMessage m(subscriptionId, channel, message);
+                            outbox.push(m);
+                        }
+                    }
                 }
             } catch (zmq::error_t& e) {
                 errors.insert(std::make_pair(subscriptionId,

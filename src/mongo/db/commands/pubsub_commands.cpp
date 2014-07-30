@@ -209,9 +209,14 @@ namespace mongo {
 
             string channel = channelElem.String();
 
+            // TODO: create empty BSONObj if no filter specified
+            // TODO: validate filter format (look at find command?)
+            BSONElement filterElem = cmdObj["filter"];
+            BSONObj filter = filterElem.Obj();
+
             // TODO: add secure access to this channel?
             // perhaps return an <oid, key> pair?
-            OID oid = PubSub::subscribe(channel);
+            OID oid = PubSub::subscribe(channel, filter);
             result.append(kSubscriptionId, oid);
 
             return true;

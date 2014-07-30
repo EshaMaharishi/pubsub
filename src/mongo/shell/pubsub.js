@@ -28,12 +28,13 @@ ps.publish = function(channel, message) {
     return res;
 }
 
-ps.subscribe = function(channel) {
+ps.subscribe = function(channel, filter) {
+    // TODO: validate filter? it's an object...
     channelType = typeof channel;
     if (channelType != "string")
         throw Error("The channel argument to the subscribe command must be a string but was a " +
                      channelType);
-    var res = db.runCommand({ subscribe: channel });
+    var res = db.runCommand({ subscribe: channel, filter: filter });
     assert.commandWorked(res)
     var subscriptionId = res['subscriptionId'];
     this._allSubscriptions.push(subscriptionId);

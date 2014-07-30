@@ -209,14 +209,35 @@ namespace mongo {
 
             string channel = channelElem.String();
 
-            // TODO: create empty BSONObj if no filter specified
             // TODO: validate filter format (look at find command?)
-            BSONElement filterElem = cmdObj["filter"];
-            BSONObj filter = filterElem.Obj();
+            BSONObj filter;
+            if (cmdObj.hasField("filter")){
+                BSONElement filterElem = cmdObj["filter"];
+                // ensure that the filter is a BSON object
+                uassert(18553, mongoutils::str::stream() << "The filter passed to the subscribe "
+                                                         << "command must be an object but was a "
+                                                         << typeName(filterElem.type()),
+                        filterElem.type() == mongo::Object);
+                filter = filterElem.Obj();
+            }
+
+            // TODO: validate projection format
+            BSONObj projection;
+            if (cmdObj.hasField("projection")){
+                BSONElement projectionElem = cmdObj["projection"];
+                // ensure that the projection is a BSON object
+                uassert(18554, mongoutils::str::stream() << "The projection passed to the "
+                                                         << "subscribe command must be an object "
+                                                         << "but was a "
+                                                         << typeName(projectionElem.type()),
+                        projectionElem.type() == mongo::Object);
+                projection = projectionElem.Obj();
+            }
+           
 
             // TODO: add secure access to this channel?
             // perhaps return an <oid, key> pair?
-            OID oid = PubSub::subscribe(channel, filter);
+            OID oid = PubSub::subscribe(channel, filter, projection);
             result.append(kSubscriptionId, oid);
 
             return true;

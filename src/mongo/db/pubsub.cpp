@@ -38,6 +38,7 @@
 #include "mongo/db/server_options_helpers.h"
 #include "mongo/db/server_parameters.h"
 #include "mongo/db/matcher/matcher.h"
+#include "mongo/db/projection.h"
 
 namespace mongo {
 
@@ -173,7 +174,8 @@ namespace mongo {
 
     // TODO: add secure access to this channel?
     // perhaps return an <oid, key> pair?
-    SubscriptionId PubSub::subscribe(const std::string& channel, const BSONObj& filter) {
+    SubscriptionId PubSub::subscribe(const std::string& channel, const BSONObj& filter,
+                                     const BSONObj& projection) {
         SubscriptionId subscriptionId;
         subscriptionId.init();
 
@@ -191,7 +193,14 @@ namespace mongo {
         s->inUse = 0;
         s->shouldUnsub = 0;
         s->polledRecently = 1;
-        s->filter = new BSONObj(filter.getOwned());
+        s->filter = NULL;
+        if (!filter.isEmpty())
+            s->filter = new BSONObj(filter.getOwned());
+        s->projection = NULL;
+        if (!projection.isEmpty()){
+            s->projection = new Projection();
+            s->projection->init(projection);
+        }
 
         SimpleMutex::scoped_lock lk(mapMutex);
         subscriptions.insert(std::make_pair(subscriptionId, s));
@@ -360,18 +369,23 @@ namespace mongo {
 
                     // receive message body
                     s->sock->recv(&msg);
-
                     BSONObj message(static_cast<const char*>(msg.data()));
                     message = message.getOwned();
                     msg.rebuild();
 
-                    if(!s->filter->isEmpty()){
+                    // if subscription has filter, continue only if message matches filter
+                    if (!s->filter->isEmpty()) {
                         Matcher2 matcher(*(s->filter));
-                        if(matcher.matches(message)){
-                            SubscriptionMessage m(subscriptionId, channel, message);
-                            outbox.push(m);
-                        }
+                        if (!matcher.matches(message)) 
+                            continue;
                     }
+
+                    // if subscription has projection, apply projection to message
+                    if (s->projection)
+                        message = s->projection->transform(message); 
+
+                    SubscriptionMessage m(subscriptionId, channel, message);
+                    outbox.push(m);
                 }
             } catch (zmq::error_t& e) {
                 errors.insert(std::make_pair(subscriptionId,

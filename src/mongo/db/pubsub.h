@@ -34,6 +34,7 @@
 #include "mongo/bson/oid.h"
 #include "mongo/util/concurrency/mutex.h"
 #include "mongo/util/net/hostandport.h"
+#include "mongo/db/projection.h"
 
 namespace mongo {
 
@@ -68,7 +69,8 @@ namespace mongo {
 
         // outwards-facing interface for pubsub communication across replsets and clusters
         static bool publish(const string& channel, const BSONObj& message);
-        static SubscriptionId subscribe(const string& channel, const BSONObj& filter);
+        static SubscriptionId subscribe(const string& channel, const BSONObj& filter,
+                                        const BSONObj& projection);
         static std::priority_queue<SubscriptionMessage>
             poll(std::set<SubscriptionId>& subscriptionIds, long timeout, long long& millisPolled,
                  bool& pollAgain, std::map<SubscriptionId, std::string>& errors);
@@ -115,6 +117,9 @@ namespace mongo {
 
             // Only return documents for this subscription that match this filter
             BSONObj* filter;
+
+            // Only return the fields in each document that match the projection
+            Projection* projection;
         };
 
         // max poll length so we can check if unsubscribe has been called

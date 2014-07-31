@@ -204,6 +204,7 @@ namespace mongo {
             s->projection = new Projection();
             s->projection->init(projection);
         }
+
         SimpleMutex::scoped_lock lk(mapMutex);
         subscriptions.insert(std::make_pair(subscriptionId, s));
 

@@ -26,4 +26,3 @@ for(var i=0; i<2; i++){
     assert.eq(resBoth[i]["count"], i+4);
     assert.eq(resBoth[i]["body"], undefined);
 }
-

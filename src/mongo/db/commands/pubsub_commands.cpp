@@ -234,7 +234,7 @@ namespace mongo {
                         projectionElem.type() == mongo::Object);
                 projection = projectionElem.Obj();
             }
-           
+
 
             // TODO: add secure access to this channel?
             // perhaps return an <oid, key> pair?

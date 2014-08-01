@@ -6,7 +6,7 @@ var subBoth = ps.subscribe("A", { count: { $gt: 3 } }, { count: 1 });
 
 // publish
 for(var i=0; i<6; i++){
-    ps.publish("A", { body : "hello", count : i });  
+    ps.publish("A", { body : "hello", count : i });
     // ensure that this test, which depends on in-order delivery,
     // runs on systems with only millisecond granularity
     sleep(1);

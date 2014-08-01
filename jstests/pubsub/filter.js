@@ -1,7 +1,7 @@
 // subscribe without filter
 var subRegular = ps.subscribe("A");
- 
-// subscribe with filter 
+
+// subscribe with filter
 var subFilter = ps.subscribe("A", { count: { $gt: 3 } });
 
 // publish

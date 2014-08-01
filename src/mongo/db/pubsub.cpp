@@ -388,7 +388,7 @@ namespace mongo {
 
                     // if subscription has projection, apply projection to message
                     if (s->projection != NULL)
-                        message = s->projection->transform(message); 
+                        message = s->projection->transform(message);
 
                     SubscriptionMessage m(subscriptionId, channel, message, timestamp);
                     outbox.push(m);

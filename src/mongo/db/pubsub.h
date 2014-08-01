@@ -34,6 +34,7 @@
 #include "mongo/bson/oid.h"
 #include "mongo/util/concurrency/mutex.h"
 #include "mongo/util/net/hostandport.h"
+#include "mongo/db/matcher/matcher.h"
 #include "mongo/db/projection.h"
 
 namespace mongo {
@@ -122,7 +123,7 @@ namespace mongo {
             int polledRecently : 1;
 
             // Only return documents for this subscription that match this filter
-            BSONObj* filter;
+            Matcher2* filter;
 
             // Only return the fields in each document that match the projection
             Projection* projection;

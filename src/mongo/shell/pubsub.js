@@ -43,16 +43,12 @@ ps.subscribe = function(channel, filter, projection) {
                     "but was a " +
                     projectionType);
 
-    var res;
-    if (filter && projection)
-        res = db.runCommand({ subscribe: channel, filter: filter, projection: projection });
-    else if (filter) 
-        res = db.runCommand({ subscribe: channel, filter: filter });
-    else if (projection)
-        res = db.runCommand({ subscribe: channel, projection: projection });
-    else
-        res = db.runCommand({ subscribe: channel });
-
+    var cmdObj = {subscribe: channel};
+    if (filter)
+        cmdObj["filter"] = filter;
+    if (projection)
+        cmdObj["projection"] = projection;
+    var res = db.runCommand(cmdObj) ;
     assert.commandWorked(res)
     var subscriptionId = res['subscriptionId'];
     this._allSubscriptions.push(subscriptionId);

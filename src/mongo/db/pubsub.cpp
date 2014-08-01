@@ -37,8 +37,6 @@
 #include "mongo/db/instance.h"
 #include "mongo/db/server_options_helpers.h"
 #include "mongo/db/server_parameters.h"
-#include "mongo/db/matcher/matcher.h"
-#include "mongo/db/projection.h"
 #include <time.h>
 
 namespace mongo {
@@ -196,9 +194,11 @@ namespace mongo {
         s->inUse = 0;
         s->shouldUnsub = 0;
         s->polledRecently = 1;
+
         s->filter = NULL;
         if (!filter.isEmpty())
-            s->filter = new BSONObj(filter.getOwned());
+            s->filter = new Matcher2(filter.getOwned());
+
         s->projection = NULL;
         if (!projection.isEmpty()){
             s->projection = new Projection();
@@ -383,11 +383,8 @@ namespace mongo {
                     msg.rebuild();
 
                     // if subscription has filter, continue only if message matches filter
-                    if (s->filter != NULL) {
-                        Matcher2 matcher(*(s->filter));
-                        if (!matcher.matches(message)) 
-                            continue;
-                    }
+                    if (s->filter != NULL && !s->filter->matches(message))
+                        continue;
 
                     // if subscription has projection, apply projection to message
                     if (s->projection != NULL)

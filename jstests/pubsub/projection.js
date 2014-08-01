@@ -1,20 +1,20 @@
 // subscribe without projection 
-var subRegular = db.runCommand({ subscribe: "A" })['subscriptionId'];
+var subRegular = ps.subscribe("A");
 
 // subscribe with projection
-var subProjection = db.runCommand({ subscribe: "A", projection: { count: 1 } })['subscriptionId'];
+var subProjection = ps.subscribe("A", null, { count: 1 });
 
 // publish                                                                                          
 for(var i=0; i<6; i++){                                                                             
-    db.runCommand({ publish: "A", message: { body : "hello", count : i } });                        
+    ps.publish("A", { body : "hello", count : i });
     // ensure that this test, which depends on in-order delivery,                                   
-    // runs on systems with only millisecond granularity                                            
+    // works on systems with only millisecond granularity                                            
     sleep(1);                                                                                       
 }
 
 // poll on subscriptions as array                                                               
 var arr = [subRegular, subProjection];                                              
-var res = db.runCommand({ poll : arr });                                                           
+var res = ps.poll(arr);
 
 // verify correct messages received
 var resRegular = res["messages"][subRegular.str]["A"];                                                      

@@ -1,20 +1,20 @@
 // subscribe without filter                                                                         
-var subRegular = db.runCommand({ subscribe: "A" })['subscriptionId'];                                   
+var subRegular = ps.subscribe("A");                                   
                                                                                                     
 // subscribe with filter                                                                            
-var subFilter = db.runCommand({ subscribe: "A", filter: { count: { $gt: 3 } } })['subscriptionId'];
+var subFilter = ps.subscribe("A", { count: { $gt: 3 } });
 
 // publish                                                                                          
 for(var i=0; i<6; i++){                                                                             
-    db.runCommand({ publish: "A", message: { body : "hello", count : i } });                        
+    ps.publish("A", { body : "hello", count : i });                        
     // ensure that this test, which depends on in-order delivery,                                   
-    // runs on systems with only millisecond granularity                                            
+    // works on systems with only millisecond granularity                                            
     sleep(1);                                                                                       
 }
 
 // poll on all subscriptions as array                                                               
 var arr = [subRegular, subFilter];                                              
-var res = db.runCommand({ poll : arr });                                                            
+var res = ps.poll(arr);
                                       
 // verify correct messages received                                                              
 var resRegular = res["messages"][subRegular.str]["A"];                                                      
